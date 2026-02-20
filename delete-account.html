@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Account — Spotjar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0f172a; --blue: #2563eb; --blue-light: #60a5fa;
+      --slate: #64748b; --light: #f8fafc; --border: #e2e8f0;
+    }
+    body { font-family: 'Nunito', sans-serif; background: var(--light); color: var(--navy); line-height: 1.7; }
+    header { background: var(--navy); padding: 24px 32px; display: flex; align-items: center; gap: 12px; }
+    header .logo { font-size: 28px; }
+    header h1 { color: white; font-size: 22px; font-weight: 800; }
+    header h1 span { color: var(--blue-light); }
+    .container { max-width: 640px; margin: 48px auto; padding: 0 24px 80px; }
+    .card { background: white; border-radius: 20px; padding: 48px; border: 1.5px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    .page-title { font-size: 28px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .subtitle { color: var(--slate); font-size: 15px; margin-bottom: 36px; }
+    .warning-box { background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 14px; padding: 20px; margin-bottom: 32px; }
+    .warning-box p { color: #b91c1c; font-size: 14px; font-weight: 600; }
+    .warning-box ul { list-style: none; margin-top: 8px; }
+    .warning-box ul li { color: #b91c1c; font-size: 14px; padding: 2px 0 2px 20px; position: relative; }
+    .warning-box ul li::before { content: "•"; position: absolute; left: 6px; }
+    .steps h2 { font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+    .step { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+    .step-number { width: 28px; height: 28px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--blue); flex-shrink: 0; margin-top: 2px; }
+    .step p { color: #334155; font-size: 15px; }
+    .email-btn { display: block; background: #ef4444; color: white; text-decoration: none; font-weight: 800; font-size: 16px; text-align: center; padding: 16px 24px; border-radius: 12px; margin: 24px 0 12px; }
+    .email-btn:hover { opacity: 0.9; }
+    .note { color: var(--slate); font-size: 13px; text-align: center; }
+    .divider { height: 1.5px; background: var(--border); margin: 32px 0; }
+    .privacy-link { text-align: center; font-size: 14px; color: var(--slate); }
+    .privacy-link a { color: var(--blue); font-weight: 700; text-decoration: none; }
+    footer { text-align: center; color: var(--slate); font-size: 13px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🫙</div>
+    <h1><span>Spotjar</span></h1>
+  </header>
+  <div class="container">
+    <div class="card">
+      <h1 class="page-title">🗑️ Delete Your Account</h1>
+      <p class="subtitle">We're sorry to see you go! To request deletion of your Spotjar account and all associated data, please follow the steps below.</p>
+
+      <div class="warning-box">
+        <p>⚠️ Please note — deleting your account will permanently remove:</p>
+        <ul>
+          <li>Your Spotjar account and login credentials</li>
+          <li>All maps you created</li>
+          <li>All places you added</li>
+          <li>Your membership from any shared maps</li>
+        </ul>
+      </div>
+
+      <div class="steps">
+        <h2>How to request deletion:</h2>
+        <div class="step">
+          <div class="step-number">1</div>
+          <p>Tap the button below to send us a deletion request email from the email address associated with your Spotjar account.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <p>We will confirm your request and permanently delete your account and all data within <strong>7 days</strong>.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <p>You will receive a confirmation email once your account has been deleted.</p>
+        </div>
+      </div>
+
+      <a class="email-btn" href="mailto:made.with.curiosity@gmail.com?subject=Account%20Deletion%20Request&body=Hi%2C%0A%0AI%20would%20like%20to%20request%20deletion%20of%20my%20Spotjar%20account%20and%20all%20associated%20data.%0A%0AMy%20account%20email%3A%20%5Byour%20email%20here%5D%0A%0AThank%20you.">
+        📧 Send Deletion Request
+      </a>
+      <p class="note">This will open your email app with a pre-filled message to made.with.curiosity@gmail.com</p>
+
+      <div class="divider"></div>
+      <p class="privacy-link">Read our <a href="privacy-policy.html">Privacy Policy</a> to learn more about how we handle your data.</p>
+    </div>
+    <footer>© 2026 Spotjar. Made with curiosity. 🫙</footer>
+  </div>
+</body>
+</html>
