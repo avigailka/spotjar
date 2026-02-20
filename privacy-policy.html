@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Spotjar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0f172a;
+      --blue: #2563eb;
+      --blue-light: #60a5fa;
+      --slate: #64748b;
+      --light: #f8fafc;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--light);
+      color: var(--navy);
+      line-height: 1.7;
+    }
+
+    header {
+      background: var(--navy);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header .logo {
+      font-size: 28px;
+    }
+
+    header h1 {
+      color: white;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    header h1 span {
+      color: var(--blue-light);
+    }
+
+    .container {
+      max-width: 740px;
+      margin: 48px auto;
+      padding: 0 24px 80px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 48px;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    .updated {
+      color: var(--slate);
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    section {
+      margin-bottom: 36px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      width: 32px;
+      height: 32px;
+      background: #eff6ff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    p {
+      color: #334155;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    ul {
+      list-style: none;
+      margin: 8px 0;
+    }
+
+    ul li {
+      color: #334155;
+      font-size: 15px;
+      padding: 4px 0 4px 24px;
+      position: relative;
+    }
+
+    ul li::before {
+      content: "•";
+      color: var(--blue);
+      font-weight: 800;
+      position: absolute;
+      left: 8px;
+    }
+
+    a {
+      color: var(--blue);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .divider {
+      height: 1.5px;
+      background: var(--border);
+      margin: 36px 0;
+    }
+
+    .contact-box {
+      background: #eff6ff;
+      border-radius: 14px;
+      padding: 24px;
+      border: 1.5px solid #bfdbfe;
+    }
+
+    .contact-box p {
+      margin: 0;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--slate);
+      font-size: 13px;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🫙</div>
+    <h1><span>Spotjar</span></h1>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h1 class="page-title">Privacy Policy</h1>
+      <p class="updated">Last updated: February 2026</p>
+
+      <section>
+        <p>
+          Spotjar is a shared map app that lets you collect and share your favourite places with friends.
+          We take your privacy seriously and want to be clear about what we collect and how we use it.
+        </p>
+      </section>
+
+      <div class="divider"></div>
+
+      <section>
+        <h2><div class="icon">📋</div> What We Collect</h2>
+        <p>When you use Spotjar, we collect the following:</p>
+        <ul>
+          <li><strong>Email address</strong> — used to create and manage your account</li>
+          <li><strong>Password</strong> — stored securely and encrypted, we never see it in plain text</li>
+          <li><strong>Places you add</strong> — names, locations, notes, ratings and recommendations</li>
+          <li><strong>Maps you create or join</strong> — including map names, categories and member lists</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><div class="icon">🔒</div> How We Store Your Data</h2>
+        <p>
+          All data is stored securely using <strong>Supabase</strong>, a trusted cloud database provider.
+          Your data is encrypted in transit and at rest. We do not store passwords in plain text —
+          they are handled entirely by Supabase Auth.
+        </p>
+      </section>
+
+      <section>
+        <h2><div class="icon">👥</div> Who Can See Your Data</h2>
+        <ul>
+          <li>Places and maps are visible to anyone who has the map's join code</li>
+          <li>Your email address is never shown to other users</li>
+          <li>We do not sell, share or rent your data to any third parties</li>
+          <li>We do not use your data for advertising</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><div class="icon">🍪</div> Cookies & Tracking</h2>
+        <p>
+          Spotjar does not use cookies or any third-party tracking or analytics tools.
+          We do not track your location or behaviour outside of the app.
+        </p>
+      </section>
+
+      <section>
+        <h2><div class="icon">🗑️</div> Deleting Your Data</h2>
+        <p>
+          You can delete your account and all associated data at any time by contacting us at the email below.
+          We will permanently delete your account, maps, and places within 7 days of your request.
+        </p>
+      </section>
+
+      <section>
+        <h2><div class="icon">👶</div> Children's Privacy</h2>
+        <p>
+          Spotjar is not intended for children under the age of 13. We do not knowingly collect
+          personal information from children. If you believe a child has provided us with personal
+          information, please contact us and we will delete it immediately.
+        </p>
+      </section>
+
+      <section>
+        <h2><div class="icon">📝</div> Changes to This Policy</h2>
+        <p>
+          We may update this privacy policy from time to time. We will notify users of any significant
+          changes by updating the date at the top of this page.
+        </p>
+      </section>
+
+      <div class="divider"></div>
+
+      <section>
+        <h2><div class="icon">✉️</div> Contact Us</h2>
+        <div class="contact-box">
+          <p>If you have any questions about this privacy policy or how we handle your data, please contact us at:</p>
+          <p style="margin-top: 10px;"><strong><a href="mailto:made.with.curiosity@gmail.com@gmail.com">made.with.curiosity@gmail.com</a></strong></p>
+        </div>
+      </section>
+
+    </div>
+
+    <footer>
+      © 2026 Spotjar. Made with curiosity. 🫙
+    </footer>
+  </div>
+
+</body>
+</html>
