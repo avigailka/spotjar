@@ -1,7 +1,7 @@
 export default {
     expo: {
       name: "Spotjar",
-      slug: "VancouverEats",
+      slug: "SpotJar",
       version: "1.0.0",
       orientation: "portrait",
       icon: "./assets/images/icon.png",
