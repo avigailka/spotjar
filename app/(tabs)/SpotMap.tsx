@@ -17,9 +17,29 @@ type Props = {
   getPinColor: (category?: string) => string;
 };
 
+const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
+
+function useCurrentLocation() {
+  const [location, setLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  React.useEffect(() => {
+    if (navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setLocation(DEFAULT_LOCATION)
+      );
+    } else {
+      setLocation(DEFAULT_LOCATION);
+    }
+  }, []);
+
+  return location;
+}
+
 // Web map using react-leaflet
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const [LeafletComponents, setLeafletComponents] = React.useState<any>(null);
+  const location = useCurrentLocation();
 
   React.useEffect(() => {
     Promise.all([
@@ -37,7 +57,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     });
   }, []);
 
-  if (!LeafletComponents) {
+  if (!LeafletComponents || !location) {
     return <View style={{ flex: 1, backgroundColor: "#e2e8f0" }} />;
   }
 
@@ -58,7 +78,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     <div style={{ flex: 1, height: "100%", width: "100%" }}>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <MapContainer
-        center={[49.2827, -123.1207]}
+        center={[location.lat, location.lng]}
         zoom={13}
         style={{ height: "100%", width: "100%" }}
       >
@@ -81,19 +101,32 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
 // Native map using react-native-maps
 function NativeMap(props: Props) {
+  const [location, setLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  React.useEffect(() => {
+    navigator?.geolocation?.getCurrentPosition(
+      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setLocation(DEFAULT_LOCATION)
+    );
+    if (!navigator?.geolocation) setLocation(DEFAULT_LOCATION);
+  }, []);
+
   const {
     default: MapView,
     Marker,
     PROVIDER_DEFAULT,
   } = require("react-native-maps");
 
+  const center = location || DEFAULT_LOCATION;
+
   return (
     <MapView
       ref={props.mapRef}
       style={{ flex: 1 }}
       provider={Platform.OS === "android" ? PROVIDER_DEFAULT : undefined}
-      initialRegion={{ latitude: 49.2827, longitude: -123.1207, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
+      initialRegion={{ latitude: center.lat, longitude: center.lng, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
       onLongPress={props.pinMode ? props.onLongPress : undefined}
+      showsUserLocation={true}
     >
       {props.places.filter(p => p.lat && p.lng).map(p => (
         <Marker
