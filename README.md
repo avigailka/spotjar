@@ -1,50 +1,43 @@
-# Welcome to your Expo app 👋
+# 🫙 Spotjar
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Your jar of favourite spots, always remembered.
 
-## Get started
+## What is Spotjar?
 
-1. Install dependencies
+Collect and share your favorite spots with friends. Never forget a gem.
 
-   ```bash
-   npm install
-   ```
+Remember when someone in your group mentioned that amazing Italian restaurant downtown... or was it Chinese? 🤔 Getting old is hard. Spotjar is here to help!
 
-2. Start the app
+Create shared maps with your friends and family to collect all your favourite spots — restaurants, cafés, hair salons, parks, gyms, shops and more. Add notes, ratings, must-try recommendations and who suggested each place, so you never forget a hidden gem again.
 
-   ```bash
-   npx expo start
-   ```
+## How it works
 
-In the output, you'll find options to open the app in a
+- **Create a map** for any category — restaurants, salons, parks, anything
+- **Add places** with location pins, ratings, notes and recommendations
+- **Share your map** with friends using a simple join code
+- **Join friends' maps** to discover their favourite spots
+- **Filter** by who recommended it, price range or rating
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Perfect for
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Friend groups who love discovering new restaurants
+- Families sharing local favourites
+- Anyone who's ever forgotten a great recommendation
 
-## Get a fresh project
+## Tech Stack
 
-When you're ready, run:
+- [Expo](https://expo.dev) / React Native — iOS, Android & Web
+- [Supabase](https://supabase.com) — Auth & Database
+- [react-native-maps](https://github.com/react-native-maps/react-native-maps) — Native maps (iOS/Android)
+- [React Leaflet](https://react-leaflet.js.org) + OpenStreetMap — Web maps
 
-```bash
-npm run reset-project
-```
+## Getting Started
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+1. Clone the repo
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and fill in your keys
+4. Run: `npx expo start`
 
-## Learn more
+## Download
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Available on [Google Play](https://play.google.com/store/apps/details?id=com.madewithcuriosity.spotjar) *(iOS coming soon)*
