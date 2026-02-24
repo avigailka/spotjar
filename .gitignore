@@ -1,0 +1,23 @@
+# Environment variables - never commit these
+.env
+.env.local
+.env.production
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+
+# EAS
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
