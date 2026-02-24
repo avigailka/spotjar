@@ -239,7 +239,13 @@ export default function App() {
   }
 
   if (!session) {
-    return <AuthScreen onAuth={setSession} />;
+    return (
+      <View style={{ flex: 1, alignItems: "center", backgroundColor: "#0f172a" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>
+          <AuthScreen onAuth={setSession} />
+        </View>
+      </View>
+    );
   }
 
   if (screen === "map" && activeMap) {
