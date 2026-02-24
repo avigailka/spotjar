@@ -5,7 +5,8 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, Image,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import MapView, { Marker, LongPressEvent, PROVIDER_DEFAULT } from "react-native-maps";
+import SpotMap from "./SpotMap";
+import type { LongPressEvent } from "react-native-maps";
 import { createClient, Session } from "@supabase/supabase-js";
 
 // ─── Supabase ─────────────────────────────────────────────────────────────────
@@ -243,6 +244,8 @@ export default function App() {
 
   if (screen === "map" && activeMap) {
     return (
+      <View style={{ flex: 1, alignItems: "center", backgroundColor: "#0f172a" }}>
+      <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>
       <MapDetailScreen
         mapList={activeMap}
         onUpdate={updateMapLocally}
@@ -250,11 +253,15 @@ export default function App() {
         onDelete={() => deleteMap(activeMap.id)}
         userId={session.user.id}
       />
+      </View>
+      </View>
     );
   }
 
   return (
     <SafeAreaProvider>
+    <View style={{ flex: 1, alignItems: "center", backgroundColor: "#0f172a" }}>
+    <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>
     <HomeScreen
       maps={maps}
       userId={session.user.id}
@@ -277,6 +284,8 @@ export default function App() {
         return true;
       }}
     />
+    </View>
+    </View>
     </SafeAreaProvider>
   );
 }
@@ -562,7 +571,7 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoStatus, setGeoStatus] = useState<"idle" | "success" | "noresults">("idle");
   const geoTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
   const isOwner = mapList.owner_id === userId;
   const placesCount = mapList.places.length;
@@ -697,16 +706,14 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
 
       {tab === "map" && (
         <View style={{ flex: 1 }}>
-          <MapView ref={mapRef} style={{ flex: 1 }}
-            provider={Platform.OS === "android" ? PROVIDER_DEFAULT : undefined}
-            initialRegion={{ latitude: 49.2827, longitude: -123.1207, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
-            onLongPress={pinMode ? handleMapLongPress : undefined}
-          >
-            {filtered.filter(p => p.lat && p.lng).map(p => (
-              <Marker key={p.id} coordinate={{ latitude: p.lat!, longitude: p.lng! }}
-                pinColor={getPinColor(p.category)} onPress={() => setSelectedPlace(p)} />
-            ))}
-          </MapView>
+          <SpotMap
+            mapRef={mapRef}
+            places={filtered}
+            pinMode={pinMode}
+            onLongPress={handleMapLongPress}
+            onMarkerPress={setSelectedPlace}
+            getPinColor={getPinColor}
+          />
 
           {/* Bottom info panel — shows when a marker is tapped */}
           {selectedPlace && (
@@ -991,5 +998,5 @@ const styles = StyleSheet.create({
   locSuccess: { marginTop: 6, backgroundColor: "#f0fdf4", borderRadius: 8, padding: 8, borderWidth: 1, borderColor: "#bbf7d0" },
   pinBtn: { marginTop: 8, borderWidth: 1.5, borderColor: "#2563eb", borderRadius: 10, padding: 12, alignItems: "center", borderStyle: "dashed" },
   pinBanner: { position: "absolute", bottom: 20, left: 16, right: 16, backgroundColor: "#0f172a", borderRadius: 14, padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 12 },
-  infoPanel: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
+  infoPanel: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "white", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 20, elevation: 10, zIndex: 1000 },
 });
