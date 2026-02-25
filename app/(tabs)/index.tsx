@@ -658,13 +658,19 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
   }
 
   async function deletePlace(id: string) {
-    Alert.alert("Remove this place?", "", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: async () => {
-        await supabase.from("places").delete().eq("id", id);
-        onUpdate({ ...mapList, places: mapList.places.filter(p => p.id !== id) });
-      }},
-    ]);
+    if (Platform.OS === "web") {
+      if (!window.confirm("Remove this place?")) return;
+      await supabase.from("places").delete().eq("id", id);
+      onUpdate({ ...mapList, places: mapList.places.filter(p => p.id !== id) });
+    } else {
+      Alert.alert("Remove this place?", "", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", style: "destructive", onPress: async () => {
+          await supabase.from("places").delete().eq("id", id);
+          onUpdate({ ...mapList, places: mapList.places.filter(p => p.id !== id) });
+        }},
+      ]);
+    }
   }
 
   async function updateMembers(members: string[]) {
@@ -900,9 +906,13 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
                 </View>
                 <TouchableOpacity style={styles.pinBtn} onPress={() => {
                   setPinMode(true); setAddOpen(false); setTab("map");
-                  Alert.alert("Drop a pin", "Long-press anywhere on the map to set the location.", [{ text: "Got it" }]);
+                  if (Platform.OS === "web") {
+                    window.alert("Right-click anywhere on the map to drop a pin.");
+                  } else {
+                    Alert.alert("Drop a pin", "Long-press anywhere on the map to set the location.", [{ text: "Got it" }]);
+                  }
                 }}>
-                  <Text style={{ color: "#2563eb", fontWeight: "700", fontSize: 13 }}>📍 Long-press on map to drop a pin</Text>
+                  <Text style={{ color: "#2563eb", fontWeight: "700", fontSize: 13 }}>{Platform.OS === "web" ? "📍 Right-click on map to drop a pin" : "📍 Long-press on map to drop a pin"}</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8, marginBottom: 40 }}>
@@ -971,7 +981,7 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
 
       {pinMode && (
         <View style={styles.pinBanner}>
-          <Text style={{ color: "white", fontWeight: "700", fontSize: 13 }}>📍 Long-press to drop a pin</Text>
+          <Text style={{ color: "white", fontWeight: "700", fontSize: 13 }}>{Platform.OS === "web" ? "📍 Right-click to drop a pin" : "📍 Long-press to drop a pin"}</Text>
           <TouchableOpacity onPress={() => { setPinMode(false); setAddOpen(true); }}>
             <Text style={{ color: "#f87171", fontWeight: "700" }}>Cancel</Text>
           </TouchableOpacity>
