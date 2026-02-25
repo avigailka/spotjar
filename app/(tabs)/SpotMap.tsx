@@ -57,6 +57,14 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     });
   }, []);
 
+  React.useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
+
   if (!LeafletComponents || !location) {
     return <View style={{ flex: 1, backgroundColor: "#e2e8f0" }} />;
   }
@@ -76,7 +84,6 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
   return (
     <div style={{ flex: 1, height: "100%", width: "100%" }}>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <MapContainer
         center={[location.lat, location.lng]}
         zoom={13}
