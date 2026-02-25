@@ -206,7 +206,7 @@ export default function App() {
       }));
       setMaps(combined);
     } catch (e) {
-      Alert.alert("Error loading data", "Please check your internet connection and try again.");
+      Platform.OS === "web" ? window.alert("Error loading data. Please check your internet connection and try again.") : Alert.alert("Error loading data", "Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -326,8 +326,8 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
   const myMapsCount = maps.filter(m => m.owner_id === userId).length;
 
   async function handleCreate() {
-    if (!cName.trim()) { Alert.alert("Please enter a map name"); return; }
-    if (myMapsCount >= 10) { Alert.alert("Map limit reached", "You can have a maximum of 10 maps. Delete one to create a new one."); return; }
+    if (!cName.trim()) { Platform.OS === "web" ? window.alert("Please enter a map name") : Alert.alert("Please enter a map name"); return; }
+    if (myMapsCount >= 10) { Platform.OS === "web" ? window.alert("Map limit reached. You can have a maximum of 10 maps. Delete one to create a new one.") : Alert.alert("Map limit reached", "You can have a maximum of 10 maps. Delete one to create a new one."); return; }
     setSaving(true);
     const newMap = {
       id: Date.now().toString(),
@@ -340,7 +340,7 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
       owner_id: userId,
     };
     const { error } = await supabase.from("maps").insert(newMap);
-    if (error) { Alert.alert("Error creating map", error.message); setSaving(false); return; }
+    if (error) { Platform.OS === "web" ? window.alert("Error creating map: " + error.message) : Alert.alert("Error creating map", error.message); setSaving(false); return; }
     onMapCreated({ ...newMap, places: [] });
     setCreateOpen(false);
     setCName(""); setCEmoji("🍜"); setCCategory("Restaurants");
@@ -365,10 +365,16 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
         </View>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
             <Text style={{ color: "#94a3b8", fontSize: 11 }} numberOfLines={1}>{userEmail.split("@")[0]}</Text>
-            <TouchableOpacity onPress={() => Alert.alert("Sign out?", "", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Sign Out", style: "destructive", onPress: onSignOut },
-            ])}>
+            <TouchableOpacity onPress={() => {
+              if (Platform.OS === "web") {
+                if (window.confirm("Sign out?")) onSignOut();
+              } else {
+                Alert.alert("Sign out?", "", [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Sign Out", style: "destructive", onPress: onSignOut },
+                ]);
+              }
+            }}>
               <Text style={{ color: "#64748b", fontSize: 13, fontWeight: "700" }}>⎋</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnPrimary} onPress={() => setCreateOpen(true)}>
@@ -417,14 +423,16 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
               <Text style={{ color: "#94a3b8", fontSize: 20 }}>›</Text>
               {editMode && (
                 <TouchableOpacity
-                  onPress={() => Alert.alert(
-                    "Remove from your list?",
-                    "The map stays in the database. You can rejoin anytime with the code.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Remove", style: "destructive", onPress: () => onRemove(m.id) },
-                    ]
-                  )}
+                  onPress={() => {
+                    if (Platform.OS === "web") {
+                      if (window.confirm("Remove from your list? The map stays in the database. You can rejoin anytime with the code.")) onRemove(m.id);
+                    } else {
+                      Alert.alert("Remove from your list?", "The map stays in the database. You can rejoin anytime with the code.", [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Remove", style: "destructive", onPress: () => onRemove(m.id) },
+                      ]);
+                    }
+                  }}
                   style={{ backgroundColor: "#fef2f2", borderRadius: 8, padding: 6, marginLeft: 4 }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
@@ -637,8 +645,8 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
   }
 
   async function savePlace() {
-    if (!form.name?.trim()) { Alert.alert("Name required"); return; }
-    if (!editing && placesCount >= 200) { Alert.alert("Place limit reached", "This map has reached the maximum of 200 places."); return; }
+    if (!form.name?.trim()) { Platform.OS === "web" ? window.alert("Name required") : Alert.alert("Name required"); return; }
+    if (!editing && placesCount >= 200) { Platform.OS === "web" ? window.alert("Place limit reached. This map has reached the maximum of 200 places.") : Alert.alert("Place limit reached", "This map has reached the maximum of 200 places."); return; }
     setSaving(true);
     try {
       if (editing) {
@@ -653,7 +661,7 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
       }
       setAddOpen(false);
     } catch (e: any) {
-      Alert.alert("Error saving", e.message);
+      Platform.OS === "web" ? window.alert("Error saving: " + e.message) : Alert.alert("Error saving", e.message);
     } finally { setSaving(false); }
   }
 
@@ -970,7 +978,16 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
             </View>
           </View>
           {isOwner && (
-            <TouchableOpacity style={{ backgroundColor: "#fef2f2", borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#fecaca", marginTop: 20 }} onPress={onDelete}>
+            <TouchableOpacity style={{ backgroundColor: "#fef2f2", borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#fecaca", marginTop: 20 }} onPress={() => {
+              if (Platform.OS === "web") {
+                if (window.confirm("Delete this map? This cannot be undone.")) { setSettingsOpen(false); onDelete(); }
+              } else {
+                Alert.alert("Delete this map?", "This cannot be undone.", [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Delete", style: "destructive", onPress: () => { setSettingsOpen(false); onDelete(); } },
+                ]);
+              }
+            }}>
               <Text style={{ color: "#ef4444", fontWeight: "700", fontSize: 15 }}>🗑️ Delete this map</Text>
             </TouchableOpacity>
           )}
