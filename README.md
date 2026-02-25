@@ -1,12 +1,12 @@
-# 🫙 Spotjar
+# 🫙 SpotJar
 
 > Your jar of favourite spots, always remembered.
 
-## What is Spotjar?
+## What is SpotJar?
 
 Collect and share your favorite spots with friends. Never forget a gem.
 
-Remember when someone in your group mentioned that amazing Italian restaurant downtown... or was it Chinese? 🤔 Getting old is hard. Spotjar is here to help!
+Remember when someone in your group mentioned that amazing Italian restaurant downtown... or was it Chinese? 🤔 Getting old is hard. SpotJar is here to help!
 
 Create shared maps with your friends and family to collect all your favourite spots — restaurants, cafés, hair salons, parks, gyms, shops and more. Add notes, ratings, must-try recommendations and who suggested each place, so you never forget a hidden gem again.
 
@@ -38,6 +38,8 @@ Create shared maps with your friends and family to collect all your favourite sp
 3. Copy `.env.example` to `.env` and fill in your keys
 4. Run: `npx expo start`
 
-## Download
+## Try it
 
-Available on [Google Play](https://play.google.com/store/apps/details?id=com.madewithcuriosity.spotjar) *(iOS coming soon)*
+🌐 Web app: [spotjar.netlify.app](https://spotjar.netlify.app)
+
+📱 Available on [Google Play](https://play.google.com/store/apps/details?id=com.madewithcuriosity.spotjar) *(iOS coming soon)*

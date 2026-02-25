@@ -1,7 +1,7 @@
 export default {
   expo: {
-    name: "Spotjar",
-    slug: "spotjar",
+    name: "SpotJar",
+    slug: "spotJar",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",

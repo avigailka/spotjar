@@ -113,7 +113,7 @@ function AuthScreen({ onAuth }: { onAuth: (session: Session) => void }) {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, justifyContent: "center", padding: 24 }}>
         <View style={{ alignItems: "center", marginBottom: 40 }}>
           <Image source={require("../../assets/images/icon.png")} style={{ width: 80, height: 80, marginBottom: 12, borderRadius: 20 }} />
-          <Text style={{ color: "white", fontSize: 28, fontWeight: "700", marginBottom: 4 }}>Spotjar</Text>
+          <Text style={{ color: "white", fontSize: 28, fontWeight: "700", marginBottom: 4 }}>SpotJar</Text>
           <Text style={{ color: "#94a3b8", fontSize: 15 }}>Your jar of favourite spots, shared with friends</Text>
         </View>
 
@@ -361,7 +361,7 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Image source={require("../../assets/images/icon.png")} style={{ width: 28, height: 28, borderRadius: 6 }} />
-          <Text style={styles.logo}><Text style={{ color: "#60a5fa" }}>Spotjar</Text></Text>
+          <Text style={styles.logo}><Text style={{ color: "#60a5fa" }}>SpotJar</Text></Text>
         </View>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
             <Text style={{ color: "#94a3b8", fontSize: 11 }} numberOfLines={1}>{userEmail.split("@")[0]}</Text>
