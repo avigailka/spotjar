@@ -442,6 +442,8 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
       {/* CREATE MODAL */}
       <Modal visible={createOpen} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+          <View style={styles.modalContainer}>
+          <View style={styles.modalInner}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ New Map</Text>
@@ -518,12 +520,16 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
+          </View>
+          </View>
         </SafeAreaView>
       </Modal>
 
       {/* JOIN MODAL */}
       <Modal visible={joinOpen} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 20 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+          <View style={styles.modalContainer}>
+          <View style={[styles.modalInner, { padding: 20 }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>🔗 Join a Map</Text>
             <TouchableOpacity onPress={() => { setJoinOpen(false); setJoinCode(""); setJoinError(""); }}>
@@ -546,6 +552,8 @@ function HomeScreen({ maps, userId, userEmail, onOpen, onSignOut, onMapCreated, 
           <TouchableOpacity style={[styles.btnPrimary, { alignItems: "center", paddingVertical: 14, marginTop: 8 }]} onPress={handleJoin}>
             <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>Join Map →</Text>
           </TouchableOpacity>
+          </View>
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -811,6 +819,8 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
       {/* ADD/EDIT MODAL */}
       <Modal visible={addOpen} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+          <View style={styles.modalContainer}>
+          <View style={styles.modalInner}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editing ? "✏️ Edit" : `✨ Add to ${mapList.name}`}</Text>
@@ -905,12 +915,16 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
+          </View>
+          </View>
         </SafeAreaView>
       </Modal>
 
       {/* SETTINGS MODAL */}
       <Modal visible={settingsOpen} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: "white", padding: 20 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+          <View style={styles.modalContainer}>
+          <View style={[styles.modalInner, { padding: 20 }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>⚙️ Map Settings</Text>
             <TouchableOpacity onPress={() => setSettingsOpen(false)}>
@@ -950,6 +964,8 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
               <Text style={{ color: "#ef4444", fontWeight: "700", fontSize: 15 }}>🗑️ Delete this map</Text>
             </TouchableOpacity>
           )}
+          </View>
+          </View>
         </SafeAreaView>
       </Modal>
 
@@ -994,6 +1010,8 @@ const styles = StyleSheet.create({
   mapCard: { backgroundColor: "white", borderRadius: 16, padding: 16, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8 },
   mapEmoji: { width: 52, height: 52, borderRadius: 14, backgroundColor: "#f0f9ff", alignItems: "center", justifyContent: "center" },
   codeTag: { marginTop: 12, backgroundColor: "#f0f9ff", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignSelf: "flex-start", borderWidth: 1, borderColor: "#bae6fd" },
+  modalContainer: { flex: 1, alignItems: "center" },
+  modalInner: { flex: 1, width: "100%", maxWidth: 480 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
   modalTitle: { fontSize: 20, fontWeight: "700", color: "#0f172a" },
   formGroup: { marginBottom: 16 },
