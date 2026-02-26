@@ -169,7 +169,6 @@ export default function App() {
   const [screen, setScreen] = useState<"home" | "map">("home");
   const [activeMap, setActiveMap] = useState<MapList | null>(null);
 
-  // Check for existing session on startup
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -733,15 +732,19 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
       </View>
 
       {tab === "map" && (
-        <View style={{ flex: 1 }}>
-          <SpotMap
-            mapRef={mapRef}
-            places={filtered}
-            pinMode={pinMode}
-            onLongPress={handleMapLongPress}
-            onMarkerPress={setSelectedPlace}
-            getPinColor={getPinColor}
-          />
+        <View style={{ flex: 1, position: "relative" }}>
+          <View style={Platform.OS === "web"
+            ? { position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }
+            : { flex: 1 }}>
+            <SpotMap
+              mapRef={mapRef}
+              places={filtered}
+              pinMode={pinMode}
+              onLongPress={handleMapLongPress}
+              onMarkerPress={setSelectedPlace}
+              getPinColor={getPinColor}
+            />
+          </View>
 
           {/* Bottom info panel — shows when a marker is tapped */}
           {selectedPlace && (

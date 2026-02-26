@@ -66,7 +66,9 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }, []);
 
   if (!LeafletComponents || !location) {
-    return <View style={{ flex: 1, backgroundColor: "#e2e8f0" }} />;
+    return (
+      <div style={{ position: "absolute", inset: 0, backgroundColor: "#e2e8f0" }} />
+    );
   }
 
   const { MapContainer, TileLayer, Marker, useMapEvents } = LeafletComponents;
@@ -83,11 +85,11 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }
 
   return (
-    <div style={{ width: "100%", height: "100%", minHeight: "400px" }}>
+    <div style={{ position: "absolute", inset: 0, minHeight: "400px" }}>
       <MapContainer
         center={[location.lat, location.lng]}
         zoom={13}
-        style={{ height: "100%", width: "100%", minHeight: "400px" }}
+        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
