@@ -18,55 +18,64 @@ type Props = {
 
 const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 
+const MAP_CONTAINER_ID = "spotjar-leaflet-map";
+
 export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const mapInstanceRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[]>([]);
   const [ready, setReady] = React.useState(false);
 
-  // Step 1: Load Leaflet from CDN
   React.useEffect(() => {
-    if ((window as any).L) { initMap(); return; }
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
-
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.onload = () => initMap();
-    script.onerror = (e) => console.error("Leaflet script failed to load", e);
-    document.head.appendChild(script);
-  }, []);
-
-  function initMap() {
-    const getLocation = (cb: (lat: number, lng: number) => void) => {
-      if (navigator?.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => cb(pos.coords.latitude, pos.coords.longitude),
-          () => cb(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
-        );
-      } else {
-        cb(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
+    const loadAndInit = () => {
+      // If already loaded, just init
+      if ((window as any).L) {
+        initMap((window as any).L);
+        return;
       }
+
+      // Inject CSS
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+
+      // Inject JS
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = () => initMap((window as any).L);
+      script.onerror = (e) => console.error("Leaflet failed:", e);
+      document.head.appendChild(script);
     };
 
-    getLocation((lat, lng) => {
-      // Wait for the div to be in the DOM
-      const tryInit = () => {
-        const container = containerRef.current;
-        if (!container) { setTimeout(tryInit, 50); return; }
-        if (mapInstanceRef.current) return;
+    const initMap = (L: any) => {
+      const container = document.getElementById(MAP_CONTAINER_ID);
+      if (!container) {
+        console.error("Map container not found");
+        return;
+      }
+      if (mapInstanceRef.current) return;
 
-        const L = (window as any).L;
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
 
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-          iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-          shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        });
+      const getLocation = (cb: (lat: number, lng: number) => void) => {
+        if (navigator?.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => cb(pos.coords.latitude, pos.coords.longitude),
+            () => cb(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
+          );
+        } else {
+          cb(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
+        }
+      };
+
+      getLocation((lat, lng) => {
+        const container = document.getElementById(MAP_CONTAINER_ID);
+        if (!container || mapInstanceRef.current) return;
 
         const map = L.map(container).setView([lat, lng], 13);
         mapInstanceRef.current = map;
@@ -82,13 +91,20 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
         });
 
         setReady(true);
-      };
+      });
+    };
 
-      tryInit();
-    });
-  }
+    loadAndInit();
 
-  // Step 2: Update markers when places change
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update markers when places change
   React.useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !ready) return;
@@ -105,22 +121,12 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
     });
   }, [places, ready]);
 
-  // Cleanup
-  React.useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
-
   return (
     <div style={{ position: "absolute", inset: 0, minHeight: "400px" }}>
       {!ready && (
         <div style={{ position: "absolute", inset: 0, backgroundColor: "#e2e8f0" }} />
       )}
-      <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+      <div id={MAP_CONTAINER_ID} style={{ height: "100%", width: "100%" }} />
     </div>
   );
 }
