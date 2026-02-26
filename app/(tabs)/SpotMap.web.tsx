@@ -19,24 +19,17 @@ type Props = {
 const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 const MAP_CONTAINER_ID = "spotjar-leaflet-map";
 
-function waitForL(cb: (L: any) => void) {
-  // If already available, use it immediately
-  if ((window as any).L) { cb((window as any).L); return; }
-  // Otherwise poll until available
-  const interval = setInterval(() => {
-    if ((window as any).L) {
-      clearInterval(interval);
-      cb((window as any).L);
-    }
-  }, 50);
-}
-
 export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  const mapInstanceRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[]>([]);
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
+    // Clean up any previous map instance on this container
+    if ((window as any).__spotjarMap) {
+      (window as any).__spotjarMap.remove();
+      (window as any).__spotjarMap = null;
+    }
+
     // Inject CSS
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const link = document.createElement("link");
@@ -45,17 +38,10 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
       document.head.appendChild(link);
     }
 
-    // Inject JS if not already present
-    if (!document.querySelector('script[src*="leaflet.js"]')) {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      document.head.appendChild(script);
-    }
-
-    // Wait for L to be available (handles both fresh load and cached load)
-    waitForL((L) => {
+    const doInit = () => {
+      const L = (window as any).L;
       const container = document.getElementById(MAP_CONTAINER_ID);
-      if (!container || mapInstanceRef.current) return;
+      if (!container) { console.error("No container"); return; }
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -64,47 +50,63 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
         shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
+      const createMap = (lat: number, lng: number) => {
+        const container = document.getElementById(MAP_CONTAINER_ID);
+        if (!container) return;
+
+        const map = L.map(container).setView([lat, lng], 13);
+        (window as any).__spotjarMap = map;
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map);
+
+        map.on("contextmenu", (e: any) => {
+          if (pinMode) {
+            onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
+          }
+        });
+
+        setReady(true);
+      };
+
       if (navigator?.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => createMap(L, pos.coords.latitude, pos.coords.longitude),
-          () => createMap(L, DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
+          (pos) => createMap(pos.coords.latitude, pos.coords.longitude),
+          () => createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
         );
       } else {
-        createMap(L, DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
+        createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
       }
-    });
+    };
+
+    // If L already loaded, init immediately
+    if ((window as any).L) {
+      doInit();
+    } else {
+      // Otherwise inject script and poll
+      if (!document.querySelector('script[src*="leaflet.js"]')) {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        document.head.appendChild(script);
+      }
+      const interval = setInterval(() => {
+        if ((window as any).L) { clearInterval(interval); doInit(); }
+      }, 50);
+    }
 
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+      if ((window as any).__spotjarMap) {
+        (window as any).__spotjarMap.remove();
+        (window as any).__spotjarMap = null;
       }
+      setReady(false);
     };
   }, []);
 
-  function createMap(L: any, lat: number, lng: number) {
-    const container = document.getElementById(MAP_CONTAINER_ID);
-    if (!container || mapInstanceRef.current) return;
-
-    const map = L.map(container).setView([lat, lng], 13);
-    mapInstanceRef.current = map;
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    map.on("contextmenu", (e: any) => {
-      if (pinMode) {
-        onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
-      }
-    });
-
-    setReady(true);
-  }
-
-  // Update markers when places change
+  // Update markers
   React.useEffect(() => {
-    const map = mapInstanceRef.current;
+    const map = (window as any).__spotjarMap;
     if (!map || !ready) return;
     const L = (window as any).L;
     if (!L) return;
