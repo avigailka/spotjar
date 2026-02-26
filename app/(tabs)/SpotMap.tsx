@@ -83,11 +83,11 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }
 
   return (
-    <div style={{ flex: 1, height: "100%", width: "100%" }}>
+    <div style={{ width: "100%", height: "100%", minHeight: "400px" }}>
       <MapContainer
         center={[location.lat, location.lng]}
         zoom={13}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", minHeight: "400px" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
