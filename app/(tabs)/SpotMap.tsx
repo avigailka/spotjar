@@ -18,13 +18,12 @@ type Props = {
 };
 
 const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
-const MAP_CONTAINER_ID = "spotjar-leaflet-map";
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
-  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (!document.querySelector('link[href*="leaflet.css"]')) {
@@ -44,18 +43,12 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     const interval = setInterval(() => {
       attempts++;
       if (attempts > 100) { clearInterval(interval); return; }
-      if (initializedRef.current) { clearInterval(interval); return; }
 
       const L = (window as any).L;
-      const container = document.getElementById(MAP_CONTAINER_ID);
+      const container = containerRef.current;
       if (!L || !container) return;
 
       clearInterval(interval);
-      initializedRef.current = true;
-
-      if ((container as any)._leaflet_id) {
-        (container as any)._leaflet_id = null;
-      }
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -65,21 +58,24 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
       });
 
       const createMap = (lat: number, lng: number) => {
-        const container = document.getElementById(MAP_CONTAINER_ID);
+        const container = containerRef.current;
         if (!container) return;
-        if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-        const map = L.map(container).setView([lat, lng], 13);
-        mapRef.current = map;
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
-        map.invalidateSize();
-        map.on("contextmenu", (e: any) => {
-          if (pinMode) {
-            onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
-          }
-        });
-        setReady(true);
+        try {
+          const map = L.map(container).setView([lat, lng], 13);
+          mapRef.current = map;
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          }).addTo(map);
+          map.invalidateSize();
+          map.on("contextmenu", (e: any) => {
+            if (pinMode) {
+              onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
+            }
+          });
+          setReady(true);
+        } catch (e) {
+          console.error("Map creation failed:", e);
+        }
       };
 
       if (navigator?.geolocation) {
@@ -94,7 +90,6 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
     return () => {
       clearInterval(interval);
-      initializedRef.current = false;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -119,7 +114,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   return (
     <div style={{ position: "absolute", inset: 0, minHeight: "400px" }}>
       {!ready && <div style={{ position: "absolute", inset: 0, backgroundColor: "#e2e8f0" }} />}
-      <div id={MAP_CONTAINER_ID} style={{ height: "100%", width: "100%", zIndex: 2 }} />
+      <div ref={containerRef} style={{ height: "100%", width: "100%", zIndex: 2 }} />
     </div>
   );
 }
@@ -176,7 +171,7 @@ export default function SpotMap(props: Props) {
   }
 
   if (!mounted) {
-    return <View style={{ position: "absolute" as any, inset: 0, backgroundColor: "#e2e8f0" }} />;
+    return <View style={{ flex: 1, backgroundColor: "#e2e8f0" } as any} />;
   }
 
   return <WebMap {...props} />;
