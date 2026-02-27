@@ -25,8 +25,11 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    console.log("=== SpotMap useEffect START ===");
+
     // Inject CSS
     if (!document.querySelector('link[href*="leaflet.css"]')) {
+      console.log("Injecting Leaflet CSS");
       const link = document.createElement("link");
       link.rel = "stylesheet";
       link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
@@ -35,20 +38,30 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
 
     // Inject script if needed
     if (!document.querySelector('script[src*="leaflet.js"]')) {
+      console.log("Injecting Leaflet script");
       const script = document.createElement("script");
       script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
       document.head.appendChild(script);
+    } else {
+      console.log("Leaflet script already present");
     }
 
-    // Poll until both L and container are ready
+    let attempts = 0;
     const interval = setInterval(() => {
+      attempts++;
       const L = (window as any).L;
       const container = document.getElementById(MAP_CONTAINER_ID);
+      console.log(`Poll #${attempts}: L=${!!L}, container=${!!container}, mapRef=${!!mapRef.current}`);
 
       if (!L || !container) return;
-      if (mapRef.current) { clearInterval(interval); return; }
+      if (mapRef.current) { 
+        console.log("Map already exists, stopping poll");
+        clearInterval(interval); 
+        return; 
+      }
 
       clearInterval(interval);
+      console.log("Creating map...");
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -59,16 +72,19 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
 
       const createMap = (lat: number, lng: number) => {
         const container = document.getElementById(MAP_CONTAINER_ID);
+        console.log("createMap called, container=", !!container, "mapRef=", !!mapRef.current);
         if (!container || mapRef.current) return;
 
         const map = L.map(container).setView([lat, lng], 13);
         mapRef.current = map;
+        console.log("Map instance created:", !!map);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
 
         map.invalidateSize();
+        console.log("Map tiles added, invalidateSize called");
 
         map.on("contextmenu", (e: any) => {
           if (pinMode) {
@@ -77,19 +93,22 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
         });
 
         setReady(true);
+        console.log("setReady(true) called");
       };
 
       if (navigator?.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => createMap(pos.coords.latitude, pos.coords.longitude),
-          () => createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
+          (pos) => { console.log("Got location"); createMap(pos.coords.latitude, pos.coords.longitude); },
+          () => { console.log("Location failed, using default"); createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng); }
         );
       } else {
+        console.log("No geolocation, using default");
         createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
       }
     }, 100);
 
     return () => {
+      console.log("=== SpotMap useEffect CLEANUP ===");
       clearInterval(interval);
       if (mapRef.current) {
         mapRef.current.remove();
@@ -98,7 +117,6 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
     };
   }, []);
 
-  // Update markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
