@@ -19,6 +19,9 @@ type Props = {
 
 const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -26,6 +29,8 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!isBrowser) return;
+
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
@@ -160,19 +165,11 @@ function NativeMap(props: Props) {
 }
 
 export default function SpotMap(props: Props) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   if (Platform.OS !== "web") {
     return <NativeMap {...props} />;
   }
 
-  if (!mounted) {
-    return <View style={{ flex: 1, backgroundColor: "#e2e8f0" } as any} />;
-  }
-
+  // Render WebMap directly — no mounted wrapper
+  // isBrowser check inside WebMap's useEffect handles SSR safety
   return <WebMap {...props} />;
 }
