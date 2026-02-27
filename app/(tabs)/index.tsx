@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, Image,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import SpotMap from "../components/_SpotMap";
+import SpotMap from "../../components/_SpotMap";
 import type { LongPressEvent } from "react-native-maps";
 import { createClient, Session } from "@supabase/supabase-js";
 
