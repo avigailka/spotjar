@@ -23,6 +23,7 @@ function LeafletMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     // Inject CSS
@@ -43,12 +44,22 @@ function LeafletMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
-      if (attempts > 100) { clearInterval(interval); return; } // timeout after 10s
+      if (attempts > 100) { clearInterval(interval); return; }
+      
       const L = (window as any).L;
       const container = document.getElementById(MAP_CONTAINER_ID);
       if (!L || !container) return;
-      if (mapRef.current) { clearInterval(interval); return; }
+      
+      // Only skip if we've already initialized in THIS mount
+      if (initializedRef.current) { clearInterval(interval); return; }
+      
       clearInterval(interval);
+      initializedRef.current = true;
+
+      // Clean up any leftover map on the container from a previous mount
+      if ((container as any)._leaflet_id) {
+        (container as any)._leaflet_id = null;
+      }
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -59,18 +70,24 @@ function LeafletMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
       const createMap = (lat: number, lng: number) => {
         const container = document.getElementById(MAP_CONTAINER_ID);
-        if (!container || mapRef.current) return;
+        if (!container) return;
+        if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+
         const map = L.map(container).setView([lat, lng], 13);
         mapRef.current = map;
+
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
+
         map.invalidateSize();
+
         map.on("contextmenu", (e: any) => {
           if (pinMode) {
             onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
           }
         });
+
         setReady(true);
       };
 
@@ -86,6 +103,7 @@ function LeafletMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
     return () => {
       clearInterval(interval);
+      initializedRef.current = false;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -115,7 +133,6 @@ function LeafletMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   );
 }
 
-// Client-only wrapper — prevents SSR from swallowing useEffect
 export default function SpotMap(props: Props) {
   const [mounted, setMounted] = useState(false);
 
