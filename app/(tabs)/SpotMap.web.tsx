@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type Place = {
   id: string; name: string; category?: string; price?: string;
@@ -20,16 +20,11 @@ const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 const MAP_CONTAINER_ID = "spotjar-leaflet-map";
 
 export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  const markersRef = React.useRef<any[]>([]);
-  const [ready, setReady] = React.useState(false);
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const [ready, setReady] = useState(false);
 
-  React.useEffect(() => {
-    // Clean up any previous map instance on this container
-    if ((window as any).__spotjarMap) {
-      (window as any).__spotjarMap.remove();
-      (window as any).__spotjarMap = null;
-    }
-
+  useEffect(() => {
     // Inject CSS
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const link = document.createElement("link");
@@ -38,10 +33,22 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
       document.head.appendChild(link);
     }
 
-    const doInit = () => {
+    // Inject script if needed
+    if (!document.querySelector('script[src*="leaflet.js"]')) {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      document.head.appendChild(script);
+    }
+
+    // Poll until both L and container are ready
+    const interval = setInterval(() => {
       const L = (window as any).L;
       const container = document.getElementById(MAP_CONTAINER_ID);
-      if (!container) { console.error("No container"); return; }
+
+      if (!L || !container) return;
+      if (mapRef.current) { clearInterval(interval); return; }
+
+      clearInterval(interval);
 
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -52,14 +59,16 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
 
       const createMap = (lat: number, lng: number) => {
         const container = document.getElementById(MAP_CONTAINER_ID);
-        if (!container) return;
+        if (!container || mapRef.current) return;
 
         const map = L.map(container).setView([lat, lng], 13);
-        (window as any).__spotjarMap = map;
+        mapRef.current = map;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
+
+        map.invalidateSize();
 
         map.on("contextmenu", (e: any) => {
           if (pinMode) {
@@ -78,35 +87,20 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
       } else {
         createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
       }
-    };
-
-    // If L already loaded, init immediately
-    if ((window as any).L) {
-      doInit();
-    } else {
-      // Otherwise inject script and poll
-      if (!document.querySelector('script[src*="leaflet.js"]')) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-        document.head.appendChild(script);
-      }
-      const interval = setInterval(() => {
-        if ((window as any).L) { clearInterval(interval); doInit(); }
-      }, 50);
-    }
+    }, 100);
 
     return () => {
-      if ((window as any).__spotjarMap) {
-        (window as any).__spotjarMap.remove();
-        (window as any).__spotjarMap = null;
+      clearInterval(interval);
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
-      setReady(false);
     };
   }, []);
 
   // Update markers
-  React.useEffect(() => {
-    const map = (window as any).__spotjarMap;
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !ready) return;
     const L = (window as any).L;
     if (!L) return;
@@ -126,7 +120,7 @@ export default function SpotMap({ places, pinMode, onLongPress, onMarkerPress }:
       {!ready && (
         <div style={{ position: "absolute", inset: 0, backgroundColor: "#e2e8f0" }} />
       )}
-      <div id={MAP_CONTAINER_ID} style={{ height: "100%", width: "100%" }} />
+      <div id={MAP_CONTAINER_ID} style={{ height: "100%", width: "100%", zIndex: 2 }} />
     </div>
   );
 }
