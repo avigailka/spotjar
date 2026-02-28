@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useId } from "react";
-import { Platform, View, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Platform, View, ActivityIndicator, StyleSheet } from "react-native";
 
 type Place = {
   id: string; name: string; category?: string; price?: string;
@@ -21,9 +21,8 @@ const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  const mapInstanceId = useId().replace(/:/g, "");
-  const containerId = `map-container-${mapInstanceId}`;
-  
+  // Hardcoded ID to ensure VSCode doesn't trip over useId types
+  const containerId = "leaflet-web-map-container";
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
@@ -32,6 +31,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     if (!isBrowser) return;
 
     const initSequence = async () => {
+      // 1. Load Assets if window.L isn't there
       if (!(window as any).L) {
         await new Promise((resolve) => {
           const script = document.createElement("script");
@@ -49,8 +49,9 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
       const L = (window as any).L;
 
+      // 2. Poll for the DOM element by ID
       let element: HTMLElement | null = null;
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 40; i++) {
         element = document.getElementById(containerId);
         if (element && element.offsetHeight > 0) break;
         await new Promise((r) => setTimeout(r, 100));
@@ -67,7 +68,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
         });
 
         const map = L.map(element, {
-          tap: false,
+          tap: false, 
           zoomControl: true,
         }).setView([DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng], 13);
 
@@ -77,7 +78,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
           attribution: '&copy; OpenStreetMap',
         }).addTo(map);
 
-        setTimeout(() => map.invalidateSize(), 400);
+        setTimeout(() => map.invalidateSize(), 500);
 
         map.on("contextmenu", (e: any) => {
           if (pinMode) {
@@ -90,16 +91,8 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
         });
 
         setReady(true);
-
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 13),
-            null,
-            { timeout: 5000 }
-          );
-        }
       } catch (e) {
-        console.error("Leaflet logic error:", e);
+        console.error("Leaflet Error:", e);
       }
     };
 
@@ -111,7 +104,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
         mapRef.current = null;
       }
     };
-  }, [containerId, pinMode, onLongPress]);
+  }, [pinMode, onLongPress]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -128,19 +121,18 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     });
   }, [places, ready, onMarkerPress]);
 
-  // We use a plain object for styles here because StyleSheet.create 
-  // doesn't support '100dvh' or web-specific string units.
-  const mapElementStyle: any = {
-    height: "100%",
-    width: "100%",
-    minHeight: "100dvh",
-  };
-
   return (
-    <View style={styles.webContainer}>
+    <View style={styles.webWrapper}>
+      {/* Using nativeID ensures the underlying <div> gets an ID leaflet can find.
+          We use inline styles with 'any' to bypass VSCode CSS validation.
+      */}
       <View 
         nativeID={containerId} 
-        style={mapElementStyle} 
+        style={{ 
+          height: "100%", 
+          width: "100%", 
+          minHeight: "100dvh" 
+        } as any} 
       />
       {!ready && (
         <View style={styles.loader}>
@@ -191,25 +183,16 @@ function NativeMap(props: Props) {
 }
 
 const styles = StyleSheet.create({
-  webContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  webWrapper: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "#f1f5f9",
-  } as ViewStyle,
+  },
   loader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(241, 245, 249, 0.8)",
-    zIndex: 10,
-  } as ViewStyle,
+  },
 });
 
 export default function SpotMap(props: Props) {
