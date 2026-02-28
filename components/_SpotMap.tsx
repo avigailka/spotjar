@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useId } from "react";
-import { Platform } from "react-native";
+import { Platform, View, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
 
 type Place = {
   id: string; name: string; category?: string; price?: string;
@@ -21,9 +21,8 @@ const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  // Generates a unique ID for this specific map instance to prevent DOM clutter
-  const uniqueId = useId().replace(/:/g, ""); 
-  const containerId = `map-container-${uniqueId}`;
+  const mapInstanceId = useId().replace(/:/g, "");
+  const containerId = `map-container-${mapInstanceId}`;
   
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -32,48 +31,34 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   useEffect(() => {
     if (!isBrowser) return;
 
-    // 1. Inject Leaflet CSS & JS if not already present
-    const injectAssets = () => {
+    const initSequence = async () => {
       if (!(window as any).L) {
-        if (!document.querySelector('link[href*="leaflet.css"]')) {
+        await new Promise((resolve) => {
+          const script = document.createElement("script");
+          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+          script.async = true;
+          script.onload = resolve;
+          document.head.appendChild(script);
+
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
           document.head.appendChild(link);
-        }
-
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-        script.async = true;
-        script.onload = () => startInitialization();
-        document.head.appendChild(script);
-      } else {
-        startInitialization();
+        });
       }
-    };
 
-    const startInitialization = () => {
-      let attempts = 0;
-      const checkExist = setInterval(() => {
-        const L = (window as any).L;
-        const container = document.getElementById(containerId);
-        
-        // Wait until BOTH the library is loaded AND the div has a physical height
-        if (L && container && container.offsetHeight > 0) {
-          clearInterval(checkExist);
-          initLeaflet(L, container);
-        }
-        
-        if (attempts > 50) clearInterval(checkExist); // Stop after 5 seconds
-        attempts++;
-      }, 100);
-    };
+      const L = (window as any).L;
 
-    const initLeaflet = (L: any, container: HTMLElement) => {
-      if (mapRef.current) return;
+      let element: HTMLElement | null = null;
+      for (let i = 0; i < 30; i++) {
+        element = document.getElementById(containerId);
+        if (element && element.offsetHeight > 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+
+      if (!element || mapRef.current) return;
 
       try {
-        // Fix for default Leaflet marker icons not loading from CDN
         delete L.Icon.Default.prototype._getIconUrl;
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -81,9 +66,8 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
           shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
         });
 
-        // Initialize Map
-        const map = L.map(container, {
-          tap: false, // CRITICAL for Android Chrome touch interaction
+        const map = L.map(element, {
+          tap: false,
           zoomControl: true,
         }).setView([DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng], 13);
 
@@ -93,35 +77,33 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
           attribution: '&copy; OpenStreetMap',
         }).addTo(map);
 
-        // Force an immediate size refresh to fix "grey box" issues
-        setTimeout(() => map.invalidateSize(), 250);
+        setTimeout(() => map.invalidateSize(), 400);
 
         map.on("contextmenu", (e: any) => {
           if (pinMode) {
-            onLongPress({ 
-              nativeEvent: { 
-                coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } 
-              } 
+            onLongPress({
+              nativeEvent: {
+                coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng },
+              },
             });
           }
         });
 
         setReady(true);
 
-        // Location check: Initialize map first, then move to user if they allow
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 13),
             null,
-            { timeout: 5000, enableHighAccuracy: false }
+            { timeout: 5000 }
           );
         }
-      } catch (err) {
-        console.error("Leaflet initialization failed:", err);
+      } catch (e) {
+        console.error("Leaflet logic error:", e);
       }
     };
 
-    injectAssets();
+    initSequence();
 
     return () => {
       if (mapRef.current) {
@@ -129,35 +111,43 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [containerId, pinMode, onLongPress]);
 
-  // Update Markers when places change
   useEffect(() => {
     const map = mapRef.current;
     const L = (window as any).L;
     if (!map || !ready || !L) return;
 
-    markersRef.current.forEach(m => m.remove());
+    markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    places.filter(p => p.lat && p.lng).forEach(p => {
+    places.filter((p) => p.lat && p.lng).forEach((p) => {
       const marker = L.marker([p.lat!, p.lng!]).addTo(map);
       marker.on("click", () => onMarkerPress(p));
       markersRef.current.push(marker);
     });
-  }, [places, ready]);
+  }, [places, ready, onMarkerPress]);
+
+  // We use a plain object for styles here because StyleSheet.create 
+  // doesn't support '100dvh' or web-specific string units.
+  const mapElementStyle: any = {
+    height: "100%",
+    width: "100%",
+    minHeight: "100dvh",
+  };
 
   return (
-    <div style={{ position: "absolute", inset: 0, backgroundColor: "#f1f5f9" }}>
-      <div 
-        id={containerId} 
-        style={{ 
-          height: "100%", 
-          width: "100%", 
-          minHeight: "100dvh" // Fixes Pixel 8/9 Address Bar height issues
-        }} 
+    <View style={styles.webContainer}>
+      <View 
+        nativeID={containerId} 
+        style={mapElementStyle} 
       />
-    </div>
+      {!ready && (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -199,6 +189,28 @@ function NativeMap(props: Props) {
     </MapView>
   );
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#f1f5f9",
+  } as ViewStyle,
+  loader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(241, 245, 249, 0.8)",
+    zIndex: 10,
+  } as ViewStyle,
+});
 
 export default function SpotMap(props: Props) {
   return Platform.OS === "web" ? <WebMap {...props} /> : <NativeMap {...props} />;
