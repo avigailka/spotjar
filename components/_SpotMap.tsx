@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useId } from "react";
 import { Platform } from "react-native";
 
 type Place = {
@@ -21,7 +21,10 @@ const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Generates a unique ID for this specific map instance to prevent DOM clutter
+  const uniqueId = useId().replace(/:/g, ""); 
+  const containerId = `map-container-${uniqueId}`;
+  
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
@@ -29,91 +32,98 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   useEffect(() => {
     if (!isBrowser) return;
 
-    // 1. Inject CSS
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(link);
-    }
+    // 1. Inject Leaflet CSS & JS if not already present
+    const injectAssets = () => {
+      if (!(window as any).L) {
+        if (!document.querySelector('link[href*="leaflet.css"]')) {
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+          document.head.appendChild(link);
+        }
 
-    // 2. Inject JS
-    if (!document.querySelector('script[src*="leaflet.js"]')) {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      const L = (window as any).L;
-      const container = containerRef.current;
-
-      if (!L || !container || attempts > 50) {
-        if (attempts > 50) clearInterval(interval);
-        return;
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        script.async = true;
+        script.onload = () => startInitialization();
+        document.head.appendChild(script);
+      } else {
+        startInitialization();
       }
+    };
 
-      clearInterval(interval);
+    const startInitialization = () => {
+      let attempts = 0;
+      const checkExist = setInterval(() => {
+        const L = (window as any).L;
+        const container = document.getElementById(containerId);
+        
+        // Wait until BOTH the library is loaded AND the div has a physical height
+        if (L && container && container.offsetHeight > 0) {
+          clearInterval(checkExist);
+          initLeaflet(L, container);
+        }
+        
+        if (attempts > 50) clearInterval(checkExist); // Stop after 5 seconds
+        attempts++;
+      }, 100);
+    };
 
-      // Fix default marker icons
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
+    const initLeaflet = (L: any, container: HTMLElement) => {
+      if (mapRef.current) return;
 
-      const createMap = (lat: number, lng: number) => {
-        if (!containerRef.current || mapRef.current) return;
+      try {
+        // Fix for default Leaflet marker icons not loading from CDN
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+          iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+          shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        });
 
-        // Ensure layout is ready before initializing
-        requestAnimationFrame(() => {
-          try {
-            const map = L.map(containerRef.current!, {
-              tap: false, // CRITICAL: Fixes Android Chrome touch/render issues
-              zoomControl: true,
-            }).setView([lat, lng], 13);
+        // Initialize Map
+        const map = L.map(container, {
+          tap: false, // CRITICAL for Android Chrome touch interaction
+          zoomControl: true,
+        }).setView([DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng], 13);
 
-            mapRef.current = map;
+        mapRef.current = map;
 
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-              attribution: '&copy; OpenStreetMap',
-            }).addTo(map);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; OpenStreetMap',
+        }).addTo(map);
 
-            // Give the browser a moment to render tiles, then fix size
-            setTimeout(() => {
-              map.invalidateSize();
-            }, 200);
+        // Force an immediate size refresh to fix "grey box" issues
+        setTimeout(() => map.invalidateSize(), 250);
 
-            map.on("contextmenu", (e: any) => {
-              if (pinMode) {
-                onLongPress({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
-              }
+        map.on("contextmenu", (e: any) => {
+          if (pinMode) {
+            onLongPress({ 
+              nativeEvent: { 
+                coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } 
+              } 
             });
-
-            setReady(true);
-          } catch (e) {
-            console.error("Leaflet Init Error:", e);
           }
         });
-      };
 
-      if (navigator?.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => createMap(pos.coords.latitude, pos.coords.longitude),
-          () => createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng),
-          { timeout: 5000 }
-        );
-      } else {
-        createMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
+        setReady(true);
+
+        // Location check: Initialize map first, then move to user if they allow
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 13),
+            null,
+            { timeout: 5000, enableHighAccuracy: false }
+          );
+        }
+      } catch (err) {
+        console.error("Leaflet initialization failed:", err);
       }
-    }, 100);
+    };
+
+    injectAssets();
 
     return () => {
-      clearInterval(interval);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -121,7 +131,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
     };
   }, []);
 
-  // Update Markers
+  // Update Markers when places change
   useEffect(() => {
     const map = mapRef.current;
     const L = (window as any).L;
@@ -138,20 +148,19 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }, [places, ready]);
 
   return (
-    <div style={{ 
-      position: "absolute", 
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "#e2e8f0" 
-    }}>
+    <div style={{ position: "absolute", inset: 0, backgroundColor: "#f1f5f9" }}>
       <div 
-        ref={containerRef} 
-        style={{ height: "100%", width: "100%", visibility: ready ? "visible" : "hidden" }} 
+        id={containerId} 
+        style={{ 
+          height: "100%", 
+          width: "100%", 
+          minHeight: "100dvh" // Fixes Pixel 8/9 Address Bar height issues
+        }} 
       />
     </div>
   );
 }
 
-// NativeMap implementation stays largely the same as your previous version
 function NativeMap(props: Props) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
