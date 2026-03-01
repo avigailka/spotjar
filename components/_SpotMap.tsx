@@ -1,3 +1,7 @@
+// @ts-ignore
+// eslint-disable-next-line
+"use no memo";
+
 import React, { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
