@@ -732,7 +732,7 @@ function MapDetailScreen({ mapList, onUpdate, onBack, onDelete, userId }: {
       </View>
 
       {tab === "map" && (
-        <View style={{ flex: 1, position: "relative" }}>
+        <View style={{ flex: 1, position: "relative", overflow: "hidden"  }}>
           <View style={Platform.OS === "web"
             ? { position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }
             : { flex: 1 }}>
