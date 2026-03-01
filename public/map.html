@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    var DEFAULT_LAT = 49.2827;
+    var DEFAULT_LNG = -123.1207;
+    var map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], 13);
+    var markers = [];
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    map.on('contextmenu', function(e) {
+      window.parent.postMessage({
+        type: 'longpress',
+        lat: e.latlng.lat,
+        lng: e.latlng.lng
+      }, '*');
+    });
+
+    window.addEventListener('message', function(e) {
+      if (e.data.type === 'updateMarkers') {
+        markers.forEach(function(m) { m.remove(); });
+        markers = [];
+        e.data.places.forEach(function(p) {
+          if (p.lat && p.lng) {
+            var mk = L.marker([p.lat, p.lng]).addTo(map);
+            mk.on('click', function() {
+              window.parent.postMessage({ type: 'markerClick', place: p }, '*');
+            });
+            markers.push(mk);
+          }
+        });
+      }
+      if (e.data.type === 'setLocation') {
+        map.setView([e.data.lat, e.data.lng], 13);
+      }
+    });
+
+    window.parent.postMessage({ type: 'ready' }, '*');
+  </script>
+</body>
+</html>

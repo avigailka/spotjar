@@ -20,33 +20,6 @@ type Props = {
 const DEFAULT_LAT = 49.2827;
 const DEFAULT_LNG = -123.1207;
 
-const MAP_HTML = [
-  '<!DOCTYPE html><html><head>',
-  '<meta name="viewport" content="width=device-width,initial-scale=1">',
-  '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>',
-  '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>',
-  '<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;}</style>',
-  '</head><body><div id="map"></div><script>',
-  'var map=L.map("map").setView([' + DEFAULT_LAT + ',' + DEFAULT_LNG + '],13);',
-  'L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);',
-  'map.on("contextmenu",function(e){',
-  'window.parent.postMessage({type:"longpress",lat:e.latlng.lat,lng:e.latlng.lng},"*");',
-  '});',
-  'window._markers=[];',
-  'window.addEventListener("message",function(e){',
-  'if(e.data.type==="updateMarkers"){',
-  'window._markers.forEach(function(m){m.remove();});',
-  'window._markers=[];',
-  'e.data.places.forEach(function(p){',
-  'if(p.lat&&p.lng){',
-  'var mk=L.marker([p.lat,p.lng]).addTo(map);',
-  'mk.on("click",function(){window.parent.postMessage({type:"markerClick",place:p},"*");});',
-  'window._markers.push(mk);',
-  '}});}})',
-  ';window.parent.postMessage({type:"ready"},"*");',
-  '<\/script></body></html>'
-].join('');
-
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeReady, setIframeReady] = useState(false);
@@ -71,19 +44,28 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }, [places, iframeReady]);
 
   useEffect(() => {
-    if (!iframeRef.current) return;
-    const blob = new Blob([MAP_HTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    iframeRef.current.src = url;
-    return () => URL.revokeObjectURL(url);
-  }, []);
+    if (!iframeReady || !iframeRef.current?.contentWindow) return;
+    if (navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'setLocation',
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          }, '*');
+        },
+        () => {}
+      );
+    }
+  }, [iframeReady]);
 
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <iframe
         ref={iframeRef}
+        src="/map.html"
         style={{ width: '100%', height: '100%', border: 'none' }}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
       />
     </div>
   );
