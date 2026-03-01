@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, View, ActivityIndicator, StyleSheet } from "react-native";
+import { Platform, View } from "react-native";
 
 type Place = {
   id: string; name: string; category?: string; price?: string;
@@ -18,128 +18,111 @@ type Props = {
 };
 
 const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
-const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
-  // Hardcoded ID to ensure VSCode doesn't trip over useId types
-  const containerId = "leaflet-web-map-container";
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const [ready, setReady] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeReady, setIframeReady] = useState(false);
 
-  useEffect(() => {
-    if (!isBrowser) return;
+  const getHTML = (lat: number, lng: number) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    var map = L.map('map').setView([${lat}, ${lng}], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
 
-    const initSequence = async () => {
-      // 1. Load Assets if window.L isn't there
-      if (!(window as any).L) {
-        await new Promise((resolve) => {
-          const script = document.createElement("script");
-          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-          script.async = true;
-          script.onload = resolve;
-          document.head.appendChild(script);
+    map.on('contextmenu', function(e) {
+      window.parent.postMessage({
+        type: 'longpress',
+        lat: e.latlng.lat,
+        lng: e.latlng.lng
+      }, '*');
+    });
 
-          const link = document.createElement("link");
-          link.rel = "stylesheet";
-          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-          document.head.appendChild(link);
-        });
-      }
-
-      const L = (window as any).L;
-
-      // 2. Poll for the DOM element by ID
-      let element: HTMLElement | null = null;
-      for (let i = 0; i < 40; i++) {
-        element = document.getElementById(containerId);
-        if (element && element.offsetHeight > 0) break;
-        await new Promise((r) => setTimeout(r, 100));
-      }
-
-      if (!element || mapRef.current) return;
-
-      try {
-        delete L.Icon.Default.prototype._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-          iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-          shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        });
-
-        const map = L.map(element, {
-          tap: false, 
-          zoomControl: true,
-        }).setView([DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng], 13);
-
-        mapRef.current = map;
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; OpenStreetMap',
-        }).addTo(map);
-
-        setTimeout(() => map.invalidateSize(), 500);
-
-        map.on("contextmenu", (e: any) => {
-          if (pinMode) {
-            onLongPress({
-              nativeEvent: {
-                coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng },
-              },
+    window.addEventListener('message', function(e) {
+      if (e.data.type === 'updateMarkers') {
+        if (window._markers) {
+          window._markers.forEach(function(m) { m.remove(); });
+        }
+        window._markers = [];
+        e.data.places.forEach(function(p) {
+          if (p.lat && p.lng) {
+            var marker = L.marker([p.lat, p.lng]).addTo(map);
+            marker.on('click', function() {
+              window.parent.postMessage({ type: 'markerClick', place: p }, '*');
             });
+            window._markers.push(marker);
           }
         });
-
-        setReady(true);
-      } catch (e) {
-        console.error("Leaflet Error:", e);
       }
-    };
+    });
 
-    initSequence();
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [pinMode, onLongPress]);
+    window.parent.postMessage({ type: 'ready' }, '*');
+  </script>
+</body>
+</html>`;
 
   useEffect(() => {
-    const map = mapRef.current;
-    const L = (window as any).L;
-    if (!map || !ready || !L) return;
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data.type === 'ready') {
+        setIframeReady(true);
+      } else if (e.data.type === 'longpress' && pinMode) {
+        onLongPress({ nativeEvent: { coordinate: { latitude: e.data.lat, longitude: e.data.lng } } });
+      } else if (e.data.type === 'markerClick') {
+        onMarkerPress(e.data.place);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [pinMode, onLongPress, onMarkerPress]);
 
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+  useEffect(() => {
+    if (!iframeReady || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({
+      type: 'updateMarkers',
+      places
+    }, '*');
+  }, [places, iframeReady]);
 
-    places.filter((p) => p.lat && p.lng).forEach((p) => {
-      const marker = L.marker([p.lat!, p.lng!]).addTo(map);
-      marker.on("click", () => onMarkerPress(p));
-      markersRef.current.push(marker);
-    });
-  }, [places, ready, onMarkerPress]);
+  // Get location then set iframe src
+  useEffect(() => {
+    const setMap = (lat: number, lng: number) => {
+      if (!iframeRef.current) return;
+      const html = getHTML(lat, lng);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      iframeRef.current.src = url;
+    };
+
+    if (navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setMap(pos.coords.latitude, pos.coords.longitude),
+        () => setMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
+      );
+    } else {
+      setMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
+    }
+  }, []);
 
   return (
-    <View style={styles.webWrapper}>
-      {/* Using nativeID ensures the underlying <div> gets an ID leaflet can find.
-          We use inline styles with 'any' to bypass VSCode CSS validation.
-      */}
-      <View 
-        nativeID={containerId} 
-        style={{ 
-          height: "100%", 
-          width: "100%", 
-          minHeight: "100dvh" 
-        } as any} 
+    <div style={{ position: "absolute", inset: 0 }}>
+      <iframe
+        ref={iframeRef}
+        style={{ width: "100%", height: "100%", border: "none" }}
+        sandbox="allow-scripts allow-same-origin"
       />
-      {!ready && (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
-      )}
-    </View>
+    </div>
   );
 }
 
@@ -151,6 +134,7 @@ function NativeMap(props: Props) {
       (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => setLocation(DEFAULT_LOCATION)
     );
+    if (!navigator?.geolocation) setLocation(DEFAULT_LOCATION);
   }, []);
 
   const { default: MapView, Marker, PROVIDER_DEFAULT } = require("react-native-maps");
@@ -161,12 +145,7 @@ function NativeMap(props: Props) {
       ref={props.mapRef}
       style={{ flex: 1 }}
       provider={Platform.OS === "android" ? PROVIDER_DEFAULT : undefined}
-      initialRegion={{ 
-        latitude: center.lat, 
-        longitude: center.lng, 
-        latitudeDelta: 0.06, 
-        longitudeDelta: 0.06 
-      }}
+      initialRegion={{ latitude: center.lat, longitude: center.lng, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
       onLongPress={props.pinMode ? props.onLongPress : undefined}
       showsUserLocation={true}
     >
@@ -182,19 +161,7 @@ function NativeMap(props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  webWrapper: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#f1f5f9",
-  },
-  loader: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(241, 245, 249, 0.8)",
-  },
-});
-
 export default function SpotMap(props: Props) {
-  return Platform.OS === "web" ? <WebMap {...props} /> : <NativeMap {...props} />;
+  if (Platform.OS !== "web") return <NativeMap {...props} />;
+  return <WebMap {...props} />;
 }
