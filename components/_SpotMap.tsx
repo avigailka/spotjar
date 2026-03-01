@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform } from "react-native";
 
 type Place = {
   id: string; name: string; category?: string; price?: string;
@@ -17,61 +17,39 @@ type Props = {
   getPinColor: (category?: string) => string;
 };
 
-const DEFAULT_LOCATION = { lat: 49.2827, lng: -123.1207 };
+const DEFAULT_LAT = 49.2827;
+const DEFAULT_LNG = -123.1207;
+
+const MAP_HTML = [
+  '<!DOCTYPE html><html><head>',
+  '<meta name="viewport" content="width=device-width,initial-scale=1">',
+  '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>',
+  '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>',
+  '<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;}</style>',
+  '</head><body><div id="map"></div><script>',
+  'var map=L.map("map").setView([' + DEFAULT_LAT + ',' + DEFAULT_LNG + '],13);',
+  'L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);',
+  'map.on("contextmenu",function(e){',
+  'window.parent.postMessage({type:"longpress",lat:e.latlng.lat,lng:e.latlng.lng},"*");',
+  '});',
+  'window._markers=[];',
+  'window.addEventListener("message",function(e){',
+  'if(e.data.type==="updateMarkers"){',
+  'window._markers.forEach(function(m){m.remove();});',
+  'window._markers=[];',
+  'e.data.places.forEach(function(p){',
+  'if(p.lat&&p.lng){',
+  'var mk=L.marker([p.lat,p.lng]).addTo(map);',
+  'mk.on("click",function(){window.parent.postMessage({type:"markerClick",place:p},"*");});',
+  'window._markers.push(mk);',
+  '}});}})',
+  ';window.parent.postMessage({type:"ready"},"*");',
+  '<\/script></body></html>'
+].join('');
 
 function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeReady, setIframeReady] = useState(false);
-
-  const getHTML = (lat: number, lng: number) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var map = L.map('map').setView([${lat}, ${lng}], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-
-    map.on('contextmenu', function(e) {
-      window.parent.postMessage({
-        type: 'longpress',
-        lat: e.latlng.lat,
-        lng: e.latlng.lng
-      }, '*');
-    });
-
-    window.addEventListener('message', function(e) {
-      if (e.data.type === 'updateMarkers') {
-        if (window._markers) {
-          window._markers.forEach(function(m) { m.remove(); });
-        }
-        window._markers = [];
-        e.data.places.forEach(function(p) {
-          if (p.lat && p.lng) {
-            var marker = L.marker([p.lat, p.lng]).addTo(map);
-            marker.on('click', function() {
-              window.parent.postMessage({ type: 'markerClick', place: p }, '*');
-            });
-            window._markers.push(marker);
-          }
-        });
-      }
-    });
-
-    window.parent.postMessage({ type: 'ready' }, '*');
-  </script>
-</body>
-</html>`;
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -89,38 +67,23 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
 
   useEffect(() => {
     if (!iframeReady || !iframeRef.current?.contentWindow) return;
-    iframeRef.current.contentWindow.postMessage({
-      type: 'updateMarkers',
-      places
-    }, '*');
+    iframeRef.current.contentWindow.postMessage({ type: 'updateMarkers', places }, '*');
   }, [places, iframeReady]);
 
-  // Get location then set iframe src
   useEffect(() => {
-    const setMap = (lat: number, lng: number) => {
-      if (!iframeRef.current) return;
-      const html = getHTML(lat, lng);
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      iframeRef.current.src = url;
-    };
-
-    if (navigator?.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setMap(pos.coords.latitude, pos.coords.longitude),
-        () => setMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng)
-      );
-    } else {
-      setMap(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng);
-    }
+    if (!iframeRef.current) return;
+    const blob = new Blob([MAP_HTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    iframeRef.current.src = url;
+    return () => URL.revokeObjectURL(url);
   }, []);
 
   return (
-    <div style={{ position: "absolute", inset: 0 }}>
+    <div style={{ position: 'absolute', inset: 0 }}>
       <iframe
         ref={iframeRef}
-        style={{ width: "100%", height: "100%", border: "none" }}
-        sandbox="allow-scripts allow-same-origin"
+        style={{ width: '100%', height: '100%', border: 'none' }}
+        sandbox="allow-scripts"
       />
     </div>
   );
@@ -132,13 +95,13 @@ function NativeMap(props: Props) {
   useEffect(() => {
     navigator?.geolocation?.getCurrentPosition(
       (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setLocation(DEFAULT_LOCATION)
+      () => setLocation({ lat: DEFAULT_LAT, lng: DEFAULT_LNG })
     );
-    if (!navigator?.geolocation) setLocation(DEFAULT_LOCATION);
+    if (!navigator?.geolocation) setLocation({ lat: DEFAULT_LAT, lng: DEFAULT_LNG });
   }, []);
 
   const { default: MapView, Marker, PROVIDER_DEFAULT } = require("react-native-maps");
-  const center = location || DEFAULT_LOCATION;
+  const center = location || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
 
   return (
     <MapView
@@ -162,6 +125,6 @@ function NativeMap(props: Props) {
 }
 
 export default function SpotMap(props: Props) {
-  if (Platform.OS !== "web") return <NativeMap {...props} />;
+  if (Platform.OS !== 'web') return <NativeMap {...props} />;
   return <WebMap {...props} />;
 }
