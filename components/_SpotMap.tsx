@@ -64,7 +64,7 @@ function WebMap({ places, pinMode, onLongPress, onMarkerPress }: Props) {
   }, [iframeReady]);
 
   return (
-    <div style={{ position: 'absolute', inset: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       <iframe
         ref={iframeRef}
         src="/map.html"
